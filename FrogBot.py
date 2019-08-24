@@ -4,16 +4,14 @@ ircsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server = "chat.freenode.net" 
 channel = "#froggington"
 botnick = "FrogBot" 
-adminname = "G1Duck" 
+adminname = "tomdoherty" 
 exitcode = "bye " + botnick 
 
-ircsock.connect((server, 6667)) 
-
-ircsock.send(bytes("USER "+ botnick +" "+ botnick +" "+ botnick + " " + botnick + "\n", "UTF-8")) 
-ircsock.send(bytes("NICK "+ botnick +"\n", "UTF-8")) 
+def sendraw(msg): 
+  ircsock.send(msg + "\n")
 
 def joinchan(chan): 
-  ircsock.send(bytes("JOIN "+ chan +"\n", "UTF-8")) 
+  sendraw("JOIN "+ chan)
   ircmsg = ""
   while ircmsg.find("End of /NAMES list.") == -1: 
     ircmsg = ircsock.recv(2048).decode("UTF-8")
@@ -21,12 +19,17 @@ def joinchan(chan):
     print(ircmsg)
 
 def ping(): 
-  ircsock.send(bytes("PONG :pingis\n", "UTF-8"))
+  sendraw("PONG :pingis")
 
 def sendmsg(msg, target=channel): 
-  ircsock.send(bytes("PRIVMSG "+ target +" :"+ msg +"\n", "UTF-8"))
+  sendraw("PRIVMSG "+ target +" :"+ msg)
 
 def main():
+  ircsock.connect((server, 6667)) 
+
+  sendraw("USER "+ botnick +" "+ botnick +" "+ botnick + " " + botnick)
+  sendraw("NICK "+ botnick)
+
   joinchan(channel)
   
   while 1:
@@ -37,8 +40,8 @@ def main():
 
     if ircmsg.find("KICK") != -1:
       kick_channel = ircmsg.split(' ')[2]
-      ircsock.send(bytes("JOIN "+ kick_channel+ "\n", "UTF-8"))
-      ircsock.send(bytes("PRIVMSG "+ kick_channel+ " :Cunt!\n", "UTF-8"))
+      sendraw("JOIN "+ kick_channel)
+      sendraw("PRIVMSG "+ kick_channel+ " :Runt!")
     
     if ircmsg.find("PRIVMSG") != -1:
       name = ircmsg.split('!',1)[0][1:]
@@ -63,13 +66,13 @@ def main():
           
           else:
             target = name
-            message = "Could not parse. The message should be in the format of ‘.tell [target] [message]’ to work properly."
+            message = "Could not parse"
           
           sendmsg(message, target)
         
         if name.lower() == adminname.lower() and message.rstrip() == exitcode:
           sendmsg("oh...okay. :'(")
-          ircsock.send(bytes("QUIT \n", "UTF-8"))
+          sendraw("QUIT")
           return
     
     else:
